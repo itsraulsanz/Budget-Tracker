@@ -1,31 +1,81 @@
-const CACHE_NAME = "static-cache-v2";
-const DATA_CACHE_NAME = "static";
+var CACHE_NAME = "static-cache-v2";
+const DATA_CACHE_NAME = "data-cache-v1";
 
-const FILES_TO_CACHE = [
+var urls = [
   "/",
   "/index.html",
+  "/db.js",
   "/index.js",
-  "/manifest.webmanifest",
+  "/manifest.json",
   "/styles.css",
   "/icons/icon-192x192.png",
-  "/icons/icon-512x512.png"
+  "/icons/icon-512x512.png",
 ];
 
 // install
 self.addEventListener("install", function (evt) {
-  // pre cache image data
   evt.waitUntil(
-    caches.open(DATA_CACHE_NAME).then((cache) => cache.add(FILES_TO_CACHE))
+    caches.open(DATA_CACHE_NAME).then(function (cache) {
+      console.log("Opened cache");
+      cache.addAll(urls);
+    })
   );
-  // has finished installing
   self.skipWaiting();
 });
 
+// activate
+self.addEventListener("activate", function (evt) {
+  evt.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME && cacheName !== DATA_CACHE_NAME) {
+            console.log("Remove old cache data", cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+
+  self.clients.claim();
+});
+
 // fetch
-self.addEventListener("fetch", function (evt) {
-  evt.respondWith(
-    cache.match(evt.request).then((response) => {
-      return response || fetch(evt.request);
+self.addEventListener("fetch", function (event) {
+  // cache all get requests to /api routes
+  if (event.request.url.includes("/api/")) {
+    event.respondWith(
+      caches
+        .open(DATA_CACHE_NAME)
+        .then((cache) => {
+          return fetch(event.request)
+            .then((response) => {
+              // If the response was good, clone it and store it in the cache.
+              if (response.status === 200) {
+                cache.put(event.request.url, response.clone());
+              }
+              return response;
+            })
+            .catch((err) => {
+              // Network request failed, try to get it from the cache.
+              return cache.match(event.request);
+            });
+        })
+        .catch((err) => console.log(err))
+    );
+    return;
+  }
+  event.respondWith(
+    fetch(event.request).catch(function () {
+      return caches.match(event.request).then(function (response) {
+        if (response) {
+          return response;
+        } else if (event.request.headers.get("accept").includes("text/html")) {
+          // return the cached home page for all requests for html pages
+          return caches.match("/");
+        }
+      });
     })
   );
 });
