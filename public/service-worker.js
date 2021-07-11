@@ -4,10 +4,10 @@ const DATA_CACHE_NAME = "data-cache-v1";
 const urls = [
   "/",
   "/index.html",
-  "/manifest.json",
   "/db.js",
   "/index.js",
   "/styles.css",
+  "/manifest.json",
   "/icons/icon-192x192.png",
   "/icons/icon-512x512.png",
 ];

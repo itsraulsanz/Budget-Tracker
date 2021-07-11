@@ -23,7 +23,7 @@ The app is built with a Mongo database, a Mongoose schema and handle routes with
 
 The following animation demonstrates the application functionality:
 
-![Animation cycles through the app, adding exercises and showing the inserted values.](./public/assets/workout.gif) 
+![Animation cycles through the app, adding exercises and showing the inserted values.](./public/assets/budgetTracker.gif) 
 
 ## Deployed Application
 
